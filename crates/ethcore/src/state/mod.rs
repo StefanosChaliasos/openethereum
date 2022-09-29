@@ -108,7 +108,7 @@ enum AccountState {
 /// and the modification status.
 /// Account entry can contain existing (`Some`) or non-existing
 /// account (`None`)
-struct AccountEntry {
+pub struct AccountEntry {
     /// Account entry. `None` if account known to be non-existant.
     account: Option<Account>,
     /// Unmodified account balance.
@@ -309,11 +309,13 @@ pub fn prove_transaction_virtual<H: AsHashDB<KeccakHasher, DBValue> + Send + Syn
 pub struct State<B> {
     db: B,
     root: H256,
-    cache: RefCell<HashMap<Address, AccountEntry>>,
+    pub cache: RefCell<HashMap<Address, AccountEntry>>,
     // The original account is preserved in
     checkpoints: RefCell<Vec<HashMap<Address, Option<AccountEntry>>>>,
     account_start_nonce: U256,
     factories: Factories,
+
+    pub activated_addrs: Vec<Address>,
 }
 
 #[derive(Copy, Clone)]
@@ -384,6 +386,7 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
+            activated_addrs: Vec::new(),
         }
     }
 
@@ -405,6 +408,7 @@ impl<B: Backend> State<B> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: account_start_nonce,
             factories: factories,
+            activated_addrs: Vec::new(),
         };
 
         Ok(state)
@@ -1567,6 +1571,7 @@ impl Clone for State<StateDB> {
             checkpoints: RefCell::new(Vec::new()),
             account_start_nonce: self.account_start_nonce.clone(),
             factories: self.factories.clone(),
+            activated_addrs: Vec::new(),
         }
     }
 }

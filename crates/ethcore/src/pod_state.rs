@@ -19,7 +19,7 @@
 use ethereum_types::{Address, H256};
 use ethjson;
 use itertools::Itertools;
-use pod_account::{self, PodAccount};
+pub use pod_account::{self, PodAccount};
 use std::{collections::BTreeMap, fmt};
 use triehash::sec_trie_root;
 use types::state_diff::StateDiff;

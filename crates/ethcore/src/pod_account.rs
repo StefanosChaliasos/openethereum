@@ -16,7 +16,7 @@
 
 //! Account system expressed in Plain Old Data.
 
-use bytes::Bytes;
+use bytes::{Bytes, ToPretty};
 use ethereum_types::{BigEndianHash, H256, U256};
 use ethjson;
 use ethtrie::RlpCodec;
@@ -34,7 +34,7 @@ use trie::TrieFactory;
 use triehash::sec_trie_root;
 use types::account_diff::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 /// An account, expressed as Plain-Old-Data (hence the name).
 /// Does not have a DB overlay cache, code hash or anything like that.
 pub struct PodAccount {
@@ -47,6 +47,26 @@ pub struct PodAccount {
     pub code: Option<Bytes>,
     /// The storage of the account.
     pub storage: BTreeMap<H256, H256>,
+}
+
+impl std::fmt::Debug for PodAccount {
+     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+          fmt.debug_struct("PodAccount")
+               .field("balance", &self.balance)
+               .field("nonce", &self.nonce)
+               .field("code", &format_args!("0x{}", &self.code.as_ref().unwrap().to_hex()))
+               /*
+               .field("code", {
+                   match &self.code {
+                       Some(bytes) => &format_args!("{}", bytes.to_hex()),
+                       None => &format_args!(""),
+                   }
+                 })
+                 */
+                 .field("storage", &self.storage)
+                 //.field("version", &self.version)
+                 .finish()
+    }
 }
 
 fn opt_bytes_to_hex<S>(opt_bytes: &Option<Bytes>, serializer: S) -> Result<S::Ok, S::Error>

@@ -767,7 +767,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 self.stack.pop_back();
                 let call_gas = provided.expect("`provided` comes through Self::exec from `Gasometer::get_gas_cost_mem`; `gas_gas_mem_cost` guarantees `Some` when instruction is `CALL`/`CALLCODE`/`DELEGATECALL`/`CREATE`; this is one of `CALL`/`CALLCODE`/`DELEGATECALL`; qed");
                 let code_address = self.stack.pop_back();
-                let code_address = u256_to_address(&code_address);
+                let code_address = ext.u256_to_address(&code_address);
 
                 let value = if instruction == instructions::DELEGATECALL {
                     None
@@ -921,7 +921,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 return Ok(InstructionResult::StopExecution);
             }
             instructions::SUICIDE => {
-                let address = u256_to_address(&self.stack.pop_back());
+                let address = ext.u256_to_address(&self.stack.pop_back());
                 ext.al_insert_address(address.clone());
                 ext.suicide(&address)?;
                 return Ok(InstructionResult::StopExecution);
@@ -1050,7 +1050,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 self.stack.push(address_to_u256(self.params.origin.clone()));
             }
             instructions::BALANCE => {
-                let address = u256_to_address(&self.stack.pop_back());
+                let address = ext.u256_to_address(&self.stack.pop_back());
                 let balance = ext.balance(&address)?;
                 self.stack.push(balance);
                 ext.al_insert_address(address);
@@ -1089,14 +1089,14 @@ impl<Cost: CostType> Interpreter<Cost> {
             }
             instructions::RETURNDATASIZE => self.stack.push(U256::from(self.return_data.len())),
             instructions::EXTCODESIZE => {
-                let address = u256_to_address(&self.stack.pop_back());
+                let address = ext.u256_to_address(&self.stack.pop_back());
                 let len = ext.extcodesize(&address)?.unwrap_or(0);
 
                 ext.al_insert_address(address);
                 self.stack.push(U256::from(len));
             }
             instructions::EXTCODEHASH => {
-                let address = u256_to_address(&self.stack.pop_back());
+                let address = ext.u256_to_address(&self.stack.pop_back());
                 let hash = ext.extcodehash(&address)?.unwrap_or_else(H256::zero);
 
                 ext.al_insert_address(address);
@@ -1128,7 +1128,7 @@ impl<Cost: CostType> Interpreter<Cost> {
                 Self::copy_data_to_memory(&mut self.mem, &mut self.stack, &self.reader.code);
             }
             instructions::EXTCODECOPY => {
-                let address = u256_to_address(&self.stack.pop_back());
+                let address = ext.u256_to_address(&self.stack.pop_back());
                 let code = ext.extcode(&address)?;
                 Self::copy_data_to_memory(
                     &mut self.mem,

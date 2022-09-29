@@ -16,6 +16,7 @@
 
 //! VM Instructions list and utility functions
 
+use strum_macros::EnumIter;
 pub use self::Instruction::*;
 
 macro_rules! enum_with_from_u8 {
@@ -45,7 +46,7 @@ macro_rules! enum_with_from_u8 {
 enum_with_from_u8! {
     #[doc = "Virtual machine bytecode instruction."]
     #[repr(u8)]
-    #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug, Hash)]
+    #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug, Hash, EnumIter)]
     pub enum Instruction {
         #[doc = "halts execution"]
         STOP = 0x00,

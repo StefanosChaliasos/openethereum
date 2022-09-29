@@ -119,6 +119,12 @@ where
     V: VMTracer,
     B: StateBackend,
 {
+
+    fn u256_to_address(&self, value: &U256) -> Address {
+        let index = value % U256::from(self.state.activated_addrs.len() as u64);
+        return self.state.activated_addrs[index.as_usize()].clone();
+    }
+
     fn initial_storage_at(&self, key: &H256) -> vm::Result<H256> {
         if self
             .state
@@ -171,6 +177,9 @@ where
     }
 
     fn blockhash(&mut self, number: &U256) -> H256 {
+        return H256::zero()
+
+        /*
         if self.env_info.number + 256 >= self.machine.params().eip210_transition {
             let blockhash_contract_address = self.machine.params().eip210_contract_address;
             let code_res = self
@@ -258,6 +267,7 @@ where
                 }
             }
         }
+        */
     }
 
     fn create(

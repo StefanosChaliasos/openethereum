@@ -87,6 +87,7 @@ impl SharedCache {
         let mut position = 0;
 
         while position < code.len() {
+            /*
             let instruction = Instruction::from_u8(code[position]);
 
             if let Some(instruction) = instruction {
@@ -104,6 +105,9 @@ impl SharedCache {
                     }
                 }
             }
+            position += 1;
+            */
+            jump_dests.insert(position);
             position += 1;
         }
 

@@ -72,13 +72,17 @@ use ethjson::spec::ForkSpec;
 
 /// Simplified, single-block EVM test client.
 pub struct EvmTestClient<'a> {
-    state: state::State<state_db::StateDB>,
+    pub state: state::State<state_db::StateDB>,
     spec: &'a spec::Spec,
     dump_state: fn(&state::State<state_db::StateDB>) -> Option<pod_state::PodState>,
 }
 
 fn no_dump_state(_: &state::State<state_db::StateDB>) -> Option<pod_state::PodState> {
     None
+}
+
+fn dump_state(state: &state::State<state_db::StateDB>) -> Option<pod_state::PodState> {
+    state.to_pod_full().ok()
 }
 
 impl<'a> fmt::Debug for EvmTestClient<'a> {
@@ -114,6 +118,11 @@ impl<'a> EvmTestClient<'a> {
             | ForkSpec::HomesteadToEIP150At5
             | ForkSpec::ByzantiumToConstantinopleAt5 => None,
         }
+    }
+
+    /// Change default function for dump state (default does not dump)
+    pub fn set_dump_state(&mut self) {
+        self.dump_state = dump_state;
     }
 
     /// Change default function for dump state (default does not dump)
@@ -284,6 +293,7 @@ impl<'a> EvmTestClient<'a> {
     ) -> std::result::Result<TransactSuccess<T::Output, V::Output>, TransactErr> {
         let initial_gas = transaction.tx().gas;
         // Verify transaction
+        /*
         let is_ok = transaction.verify_basic(true, None);
         if let Err(error) = is_ok {
             return Err(TransactErr {
@@ -292,6 +302,7 @@ impl<'a> EvmTestClient<'a> {
                 end_state: (self.dump_state)(&self.state),
             });
         }
+        */
 
         // Apply transaction
         let result = self.state.apply_with_tracing(

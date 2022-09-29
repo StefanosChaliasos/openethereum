@@ -189,7 +189,7 @@ impl<Gas: evm::CostType> Gasometer<Gas> {
                 let mut gas = Gas::from(schedule.suicide_gas);
 
                 let is_value_transfer = !ext.origin_balance()?.is_zero();
-                let address = u256_to_address(stack.peek(0));
+                let address = ext.u256_to_address(stack.peek(0));
 
                 if (!schedule.no_empty && !ext.exists(&address)?)
                     || (schedule.no_empty
@@ -264,7 +264,7 @@ impl<Gas: evm::CostType> Gasometer<Gas> {
                     mem_needed(stack.peek(3), stack.peek(4))?,
                 );
 
-                let address = u256_to_address(stack.peek(1));
+                let address = ext.u256_to_address(stack.peek(1));
                 gas = accessed_addresses_gas(&address, gas.as_usize());
 
                 let is_value_transfer = !stack.peek(2).is_zero();
@@ -288,7 +288,7 @@ impl<Gas: evm::CostType> Gasometer<Gas> {
             }
             instructions::DELEGATECALL | instructions::STATICCALL => {
                 let mut gas = Gas::from(schedule.call_gas);
-                let address = u256_to_address(stack.peek(1));
+                let address = ext.u256_to_address(stack.peek(1));
                 gas = accessed_addresses_gas(&address, gas.as_usize());
 
                 let mem = cmp::max(

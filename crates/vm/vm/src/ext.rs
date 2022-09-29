@@ -65,6 +65,10 @@ pub enum CreateContractAddress {
 
 /// Externalities interface for EVMs
 pub trait Ext {
+    fn u256_to_address(&self, value: &U256) -> Address {
+        return Address::default();
+    }
+
     /// Returns the storage value for a given key if reversion happens on the current transaction.
     fn initial_storage_at(&self, key: &H256) -> Result<H256>;
 
