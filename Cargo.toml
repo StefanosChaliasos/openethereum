@@ -9,6 +9,10 @@ authors = [
 	"Parity Technologies <admin@parity.io>"
 ]
 
+[patch.crates-io]
+syn = { git = "https://github.com/johnyangk/syn", branch = "fix", optional = true }
+#ethabi-derive = "14.1"
+
 [dependencies]
 blooms-db = { path = "crates/db/blooms-db" }
 log = "0.4"
@@ -132,5 +136,7 @@ members = [
 	"bin/ethkey",
 	"bin/ethstore",
 	"bin/evmbin",
-	"bin/chainspec"
+	"bin/chainspec",
+    "crates/evmfuzz",
+    "crates/evmfuzz/fuzz"
 ]
