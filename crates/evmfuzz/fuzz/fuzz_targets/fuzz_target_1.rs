@@ -14,11 +14,11 @@ use std::io::prelude::*;
 
 use rand::RngCore;
 use evmfuzz::execute_proto;
-use evmfuzz::print_proto;
+//use evmfuzz::save_proto;
 
 use protobuf::Message;
 
-static mut FIRST_TIME: bool = false;
+static mut FIRST_TIME: bool = true;
 
 
 static mut WRITE_TO: String = String::new();
@@ -28,8 +28,9 @@ fn get_absolute_path_string(path_from_workspace_root: String) -> String {
 	let mut cur_dir = std::env::current_dir().unwrap();
 	cur_dir.pop();
 	cur_dir.pop();
+	cur_dir.pop();
 
-	println!("{:?}", cur_dir);
+	//println!("{:?}", cur_dir);
 
 	cur_dir.push(std::path::PathBuf::from(path_from_workspace_root));
 	return cur_dir.to_str().unwrap().into();
@@ -37,6 +38,7 @@ fn get_absolute_path_string(path_from_workspace_root: String) -> String {
 
 fn run_geth(data: &[u8]) -> Vec<u8> {
 	unsafe {
+                // remember to create fifos directory in the root of the project
 		let mut writeTo_file = OpenOptions::new().write(true).open(WRITE_TO.clone()).unwrap();
 		writeTo_file.write_all(data).unwrap();
 	}
@@ -60,7 +62,8 @@ fn fuzz_main(data: &[u8]) {
 			libc::mkfifo(CString::new(WRITE_TO.clone()).unwrap().as_ptr(), 0o644);
 			libc::mkfifo(CString::new(READ_FROM.clone()).unwrap().as_ptr(), 0o644);
 
-			Command::new(get_absolute_path_string("geth/src/github.com/ethereum/go-ethereum/build/bin/evm".into()))
+                        println!("{:?}", get_absolute_path_string("go-ethereum/build/bin/evm".into()));
+			Command::new(get_absolute_path_string("go-ethereum/build/bin/evm".into()))
 				.arg(WRITE_TO.as_str())
 				.arg(READ_FROM.as_str())
 				.spawn()
@@ -75,14 +78,14 @@ fn fuzz_main(data: &[u8]) {
 	match evmfuzz::convert_to_proto(data) {
             Some(proto) => {
                     let parity_results = execute_proto(&proto);
-                    print_proto(&proto);
+                    //save_proto(&proto);
 
 
-            //let geth_result_bytes = run_geth(data);
-            //let geth_results = evmfuzz::get_fuzz_result(geth_result_bytes.as_slice());
+            let geth_result_bytes = run_geth(data);
+            let geth_results = evmfuzz::get_fuzz_result(geth_result_bytes.as_slice());
 
-            //assert_eq!(parity_results.len(), geth_results.get_roots().len());
-            //assert_eq!(parity_results.len(), geth_results.get_dumps().len());
+            assert_eq!(parity_results.len(), geth_results.get_roots().len());
+            assert_eq!(parity_results.len(), geth_results.get_dumps().len());
 
             //for i in 0..parity_results.len() {
             //    let geth_result = geth_results.get_roots()[i].clone();

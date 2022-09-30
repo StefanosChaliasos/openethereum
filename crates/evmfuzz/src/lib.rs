@@ -1092,7 +1092,18 @@ pub fn get_nth_tx(fuzzed: &fuzzer::Fuzzed, nth: usize) -> (fuzzer::Block, fuzzer
 	panic!();
 }
 
-pub fn print_proto(fuzzed: &fuzzer::Fuzzed) {
+pub fn save_proto_json(fuzzed: &fuzzer::Fuzzed) {
+    let s: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+    let filename = "json/".to_owned() + &s + ".json";
+    fs::write(filename, print_to_string(fuzzed)).expect("Unable to write file");
+}
+
+
+pub fn save_proto(fuzzed: &fuzzer::Fuzzed) {
     let s: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
         .take(7)
