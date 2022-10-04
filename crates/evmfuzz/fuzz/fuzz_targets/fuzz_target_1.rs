@@ -7,22 +7,27 @@ use libfuzzer_sys::fuzz_target;
 use libfuzzer_sys::fuzz_mutate;
 
 use std::process::Command;
+use std::process::Child;
 use std::ffi::CString;
 use std::fs::{File, remove_file};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::{thread, time};
 
-use rand::RngCore;
+use rand::{RngCore, Rng};
+use rand::distributions::Alphanumeric;
 use evmfuzz::execute_proto;
 //use evmfuzz::save_proto;
 
 use protobuf::Message;
+use std::fs;
 
 static mut FIRST_TIME: bool = true;
 
-
 static mut WRITE_TO: String = String::new();
 static mut READ_FROM: String = String::new();
+
+static mut PROCESSES: Vec<Child> = Vec::new();
 
 fn get_absolute_path_string(path_from_workspace_root: String) -> String {
 	let mut cur_dir = std::env::current_dir().unwrap();
@@ -53,39 +58,60 @@ fn run_geth(data: &[u8]) -> Vec<u8> {
 }
 
 fn fuzz_main(data: &[u8]) {
-	unsafe {
-		if (FIRST_TIME) {
+    // TODO handle zombie processes
+    unsafe {
+        if (FIRST_TIME) {
 
-			WRITE_TO = get_absolute_path_string(format!("fifos/{}", rand::thread_rng().next_u64().to_string()));
-			READ_FROM = get_absolute_path_string(format!("fifos/{}", rand::thread_rng().next_u64().to_string()));
+            WRITE_TO = get_absolute_path_string(format!("fifos/{}", rand::thread_rng().next_u64().to_string()));
+            READ_FROM = get_absolute_path_string(format!("fifos/{}", rand::thread_rng().next_u64().to_string()));
 
-			libc::mkfifo(CString::new(WRITE_TO.clone()).unwrap().as_ptr(), 0o644);
-			libc::mkfifo(CString::new(READ_FROM.clone()).unwrap().as_ptr(), 0o644);
+            libc::mkfifo(CString::new(WRITE_TO.clone()).unwrap().as_ptr(), 0o644);
+            libc::mkfifo(CString::new(READ_FROM.clone()).unwrap().as_ptr(), 0o644);
 
-                        println!("{:?}", get_absolute_path_string("go-ethereum/build/bin/evm".into()));
-			Command::new(get_absolute_path_string("go-ethereum/build/bin/evm".into()))
-				.arg(WRITE_TO.as_str())
-				.arg(READ_FROM.as_str())
-				.spawn()
-				.unwrap();
+            let mut child = Command::new(get_absolute_path_string("go-ethereum/build/bin/evm".into()))
+                .arg(WRITE_TO.as_str())
+                .arg(READ_FROM.as_str())
+                .spawn()
+                .unwrap();
+            PROCESSES.push(child);
 
-			FIRST_TIME = false;
-		}
+            std::thread::sleep(std::time::Duration::from_millis(500));
 
-	}
+            FIRST_TIME = false;
+        }
+    }
 
-
-	match evmfuzz::convert_to_proto(data) {
-            Some(proto) => {
-                    let parity_results = execute_proto(&proto);
-                    //save_proto(&proto);
-
-
+    match evmfuzz::convert_to_proto(data) {
+        Some(proto) => {
+            let parity_results = execute_proto(&proto);
             let geth_result_bytes = run_geth(data);
-            let geth_results = evmfuzz::get_fuzz_result(geth_result_bytes.as_slice());
+            let geth_result_slice = geth_result_bytes.as_slice();
+            if "exception".as_bytes() == geth_result_slice {
+                // go panicked, saved the result and continue to the next
+                let s: String = rand::thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(15)
+                    .map(char::from)
+                    .collect();
+                fs::write("gocrash/".to_owned() + &s, data).expect("Unable to write file");
+                // We need to restart geth
+                unsafe {
+                    remove_file(WRITE_TO.clone()).expect("File delete failed");
+                    remove_file(READ_FROM.clone()).expect("File delete failed");
+                    PROCESSES.pop().unwrap().wait();
+                    FIRST_TIME = true;
+                }
+            } else {
+                let geth_results = evmfuzz::get_fuzz_result(geth_result_slice);
 
-            assert_eq!(parity_results.len(), geth_results.get_roots().len());
-            assert_eq!(parity_results.len(), geth_results.get_dumps().len());
+                assert_eq!(parity_results.len(), geth_results.get_roots().len());
+                assert_eq!(parity_results.len(), geth_results.get_dumps().len());
+            }
+            //unsafe {
+            //    for x in &PROCESSES {
+            //        println!("{}", x.status());
+            //    }
+            //}
 
             //for i in 0..parity_results.len() {
             //    let geth_result = geth_results.get_roots()[i].clone();
